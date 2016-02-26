@@ -30,7 +30,7 @@ Find more about configuring InfluxDB [here] (https://docs.influxdata.com/influxd
 
 #### Example usage of the image created the way described above
 
-##### Creating a DB named myDB
+##### Creating a DB named mydb
 ```
 curl -G http://localhost:8086/query --data-urlencode "q=CREATE DATABASE mydb"
 ```
@@ -40,7 +40,7 @@ curl -i -XPOST 'http://localhost:8086/write?db=mydb' --data-binary 'cpu_load_sho
 ```
 [Documentation for writing data to influxDB] (https://docs.influxdata.com/influxdb/v0.10/guides/writing_data/)
 
-##### Clustering 
+#### Clustering 
 ###### Example of creating a pseudo-cluster on the same host using 3 containers
 
 - Create a docker network intially 
