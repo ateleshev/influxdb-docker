@@ -40,3 +40,61 @@ curl -i -XPOST 'http://localhost:8086/write?db=mydb' --data-binary 'cpu_load_sho
 ```
 [Documentation for writing data to influxDB] (https://docs.influxdata.com/influxdb/v0.10/guides/writing_data/)
 
+##### Clustering 
+###### Example of creating a pseudo-cluster on the same host using 3 containers
+
+- Create a docker network intially 
+```
+docker network create --subnet=172.18.0.0/16 influxdbnetwork
+```
+- Create three config files as described [here] (https://docs.influxdata.com/influxdb/v0.10/clustering/cluster_setup/)
+  
+  Assume that the three container have ip addresses as:-
+    - 172.18.0.11  (config file host1.conf)
+    - 172.18.0.12  (config file host2.conf)
+    - 172.18.0.13  (config file host3.conf)
+
+```
+[meta]
+  enabled = true
+  ...
+  bind-address = "<IP>:8088"
+  http-bind-address = "<IP>:8091"
+
+...
+
+[data]
+  enabled = true
+
+[http]
+  ...
+  bind-address = "<IP>:8086"
+```
+- Run the containers as follows:- 
+```
+docker run -i -p 8083:8083 \
+              -p 8086:8086 \
+              -p 8088:8088 \
+              -p 8091:8091 \
+              --net influxdbnetwork  --ip 172.18.0.11 \
+              -v /path/on/host:/root/ \
+              influxdb   -config /root/host1.conf
+              
+
+docker run -i -p 10083:8083 \
+              -p 10086:8086 \
+              -p 10088:8088 \
+              -p 10091:8091 \
+              --net influxdbnetwork  --ip 172.18.0.12 \
+              -v /path/on/host:/root/  \
+              influxdb -config /root/host2.conf -join 172.18.0.11:8091,172.18.0.12:8091
+
+docker run -i -p 11083:8083 \
+              -p 11086:8086 \
+              -p 11088:8088 \
+              -p 11091:8091 \
+              --net influxdbnetwork  --ip 172.18.0.13 \
+              -v /path/on/host:/root/ \
+              influxdb   -config /root/host3.conf -join 172.18.0.11:8091,172.18.0.12:8091,172.18.0.13:8091
+```
+```/path/on/host``` is where you store ```host1.conf```, ```host2.conf```, ```host3.conf```
