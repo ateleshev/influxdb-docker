@@ -28,7 +28,8 @@ docker run -i -p 8083:8083 -p 8086:8086 -v /some/host/path:/path/on/container   
 ```
 Find more about configuring InfluxDB [here] (https://docs.influxdata.com/influxdb/v0.10/introduction/installation/)
 
-#### Example usage of the image created the way described above
+### Example usage of the image created the way described above
+#### HTTP API
 
 ##### Creating a DB named mydb
 ```
@@ -40,7 +41,32 @@ curl -i -XPOST 'http://localhost:8086/write?db=mydb' --data-binary 'cpu_load_sho
 ```
 [Documentation for writing data to influxDB] (https://docs.influxdata.com/influxdb/v0.10/guides/writing_data/)
 
-#### Clustering 
+#### CLI / SHELL 
+
+start the container as such :-
+```
+ docker run -d  -p 8083:8083 -p 8086:8086 -h host1 influxdb
+```
+run a command in the running container as such :-
+```
+docker exec -it $(docker ps | awk '{if ($2 == "influxdb") print $1}') bash
+```
+check that influxd (daemon) is running at PID 1
+```
+ps -ef
+```
+run the influx client as such:- 
+```
+ influx -host "host1" -port "8086"
+```
+
+#### WEB ADMIN
+
+goto [localhost:8083] (http://localhost:8083)
+
+See more about using the web admin [here] (https://docs.influxdata.com/influxdb/v0.10/tools/web_admin/)
+
+### Clustering 
 ###### Example of creating a pseudo-cluster on the same host using 3 containers
 
 - Create a docker network intially 
