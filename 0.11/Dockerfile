@@ -10,7 +10,7 @@ RUN wget -q https://repos.influxdata.com/influxdb.key && \
     gpg --import influxdb.key && \
     rm -f influxdb.key
 
-ENV INFLUXDB_VERSION 0.10.3
+ENV INFLUXDB_VERSION 0.11.0
 RUN wget -q https://s3.amazonaws.com/influxdb/influxdb_$INFLUXDB_VERSION-1_amd64.deb.asc && \
     wget -q https://s3.amazonaws.com/influxdb/influxdb_$INFLUXDB_VERSION-1_amd64.deb && \
     gpg --verify influxdb_$INFLUXDB_VERSION-1_amd64.deb.asc influxdb_$INFLUXDB_VERSION-1_amd64.deb && \
