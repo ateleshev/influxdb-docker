@@ -17,7 +17,7 @@ RUN wget -q https://s3.amazonaws.com/influxdb/influxdb_$INFLUXDB_VERSION-1_amd64
     dpkg -i influxdb_$INFLUXDB_VERSION-1_amd64.deb && \
     rm -f influxdb_$INFLUXDB_VERSION-1_amd64.deb*
 
-EXPOSE 8083 8086 8088 8091
+EXPOSE 8083 8086
 
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
