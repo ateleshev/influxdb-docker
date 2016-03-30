@@ -1,93 +1,102 @@
-## InfluxDB
+# InfluxDB
 
-InfluxDB is a time series database built from the ground up to handle high write and query loads. InfluxDB is meant to be used as a backing store for any use case involving large amounts of timestamped data, including DevOps monitoring, application metrics, IoT sensor data, and real-time analytics.
+InfluxDB is a time series database built from the ground up to handle
+high write and query loads. InfluxDB is meant to be used as a backing
+store for any use case involving large amounts of timestamped data,
+including DevOps monitoring, application metrics, IoT sensor data, and
+real-time analytics.
 
-[InfluxDB Documentation](https://docs.influxdata.com/influxdb/v0.10/)
+[InfluxDB Documentation](https://docs.influxdata.com/influxdb/latest/)
 
-## Using this image
+## Using this Image
 
-##### Exposed Ports
+### Running the container
+
+    docker run -p 8083:8083 -p 8086:8086 influxdb
+
+### Exposed Ports
+
+The following ports are important and will be automatically exposed when
+using `docker run -P`.
 
 -	8083 Admin interface port
 -	8086 HTTP API PORT
--	8088 & 8091 Internal Communication ports
 
-Find more about API Endpoints & Ports [here](https://docs.influxdata.com/influxdb/v0.10/concepts/api/).
+Other important ports that aren't exposed by default:
 
-##### Using one of the published ports
+- 8091 Meta service port
+- 8088 Clustering (raft) port
 
-	docker run -i -p 8083:8083 -p 8086:8086  influxdb 
+These two ports do not need to be exposed in a single server
+configuration.
 
-##### Supplying a config file available on the host machine
+Find more about API Endpoints & Ports [here](https://docs.influxdata.com/influxdb/latest/concepts/api/).
 
-	docker run -i -p 8083:8083 -p 8086:8086 -v /some/host/path:/path/on/container influxdb -config /path/on/container/temp.conf
+### Configuration
 
-Find more about configuring InfluxDB [here](https://docs.influxdata.com/influxdb/v0.10/introduction/installation/)
+InfluxDB can be either configured from a config file or using
+environment variables. To mount a configuration file and use it with the
+server, you can use this command:
 
-##### Example usage of the image created the way described above
+    # Generate the default configuration file
+    docker run --rm -v $PWD:/etc/influxdb influxdb bash -c 'influxd config > /etc/influxdb/influxdb.conf'
+    # Modify the configuration file and start the daemon
+    docker run -P -v $PWD:/etc/influxdb influxdb -config /etc/influxdb/influxdb.conf
 
-###### HTTP API
+Modify `$PWD` to the directory where you want to store the configuration
+file.
 
-Creating a DB named mydb
+For environment variables, the format is `INFLUXDB_$SECTION_$NAME`. All
+dashes (`-`) are replaced with underscores (`_`). If the variable isn't
+in a section, then omit that part.
+
+Examples:
+
+    INFLUXDB_REPORTING_DISABLED=true
+    INFLUXDB_META_DIR=/path/to/metadir
+    INFLUXDB_DATA_QUERY_LOG_ENABLED=false
+
+Find more about configuring InfluxDB [here](https://docs.influxdata.com/influxdb/latest/introduction/installation/)
+
+### Graphite
+
+InfluxDB supports the Graphite line protocol, but the service and ports
+are not exposed by default. To run InfluxDB with Graphite support
+enabled, you can either use a configuration file
+
+### HTTP API
+
+Creating a DB named mydb:
 
 	curl -G http://localhost:8086/query --data-urlencode "q=CREATE DATABASE mydb"
 
-Inserting in the DB
+Inserting into the DB:
 
 	curl -i -XPOST 'http://localhost:8086/write?db=mydb' --data-binary 'cpu_load_short,host=server01,region=us-west value=0.64 1434055562000000000'
 
-Read more about this in the [official docs](https://docs.influxdata.com/influxdb/v0.10/guides/writing_data/)
+Read more about this in the [official documentation](https://docs.influxdata.com/influxdb/latest/guides/writing_data/)
 
-###### CLI / SHELL
+### CLI / SHELL
 
-Start the container as such :-
+Start the container:
 
-	docker run -d  -p 8083:8083 -p 8086:8086 -h host1 influxdb
+    docker run --name=influxdb -d -p 8083:8083 -p 8086:8086 influxdb
 
-Run a command in the running container as such :-
+Run the influx client in another container as such:
 
-	docker exec -it $(docker ps | awk '{if ($2 == "influxdb") print $1}') bash
+    docker run --rm --link=influxdb -it influxdb bash -l
+    > influx -host $INFLUXDB_PORT_8086_TCP_ADDR
 
-Check that influxd (daemon) is running at PID 1
+The client needs to run bash first and then use the `influx` binary from
+there so the environment variable becomes available to use.
 
-	ps -ef
+### Web Administrator Interface
 
-Run the influx client as such:-
+Navigate to [localhost:8083](http://localhost:8083) with your browser
+while running the container.
 
-	influx -host "host1" -port "8086"
-
-###### WEB ADMIN
-
-goto [localhost:8083](http://localhost:8083)
-
-See more about using the web admin [here](https://docs.influxdata.com/influxdb/v0.10/tools/web_admin/)
-
-##### Clustering
-
-###### Example of creating a pseudo-cluster on the same host using 3 containers
-
-Create a docker network intially
-
-	docker network create --subnet=172.18.0.0/16 influxdbnetwork
-
-Create three config files as described [here](https://docs.influxdata.com/influxdb/v0.10/clustering/cluster_setup/). Assume that the three containers have ip addresses as:-
-
-	172.18.0.11 (config file host1.conf)
-	
-	172.18.0.12 (config file host2.conf)
-	
-	172.18.0.13 (config file host3.conf)
-
-Run the containers as follows:-
-
-	docker run -i -p 8083:8083 -p 8086:8086 -p 8088:8088 -p 8091:8091 --net influxdbnetwork --ip 172.18.0.11 -v /path/on/host:/root/ influxdb -config /root/host1.conf
-	
-	docker run -i -p 10083:8083 -p 10086:8086 -p 10088:8088 -p 10091:8091 --net influxdbnetwork --ip 172.18.0.12 -v /path/on/host:/root/ influxdb -config /root/host2.conf -join 172.18.0.11:8091,172.18.0.12:8091
-	
-	docker run -i -p 11083:8083 -p 11086:8086 -p 11088:8088 -p 11091:8091 --net influxdbnetwork --ip 172.18.0.13 -v /path/on/host:/root/ influxdb -config /root/host3.conf -join 172.18.0.11:8091,172.18.0.12:8091,172.18.0.13:8091
-
-`/path/on/host`is where you store`host1.conf`,`host2.conf`, and`host3.conf`
+See more about using the web admin [here](https://docs.influxdata.com/influxdb/latest/tools/web_admin/).
 
 ## Supported Docker versions
 
-This image is officially supported on Docker version 1.10.1
+This image is officially supported on Docker version 1.10.1.
